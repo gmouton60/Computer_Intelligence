@@ -1,0 +1,38 @@
+import os
+from PIL import Image
+import cv2
+import pickle
+
+#takes user's name and creates a subdirectory in data to save the images
+#collected for training
+first_name = input('Enter your first name: ')
+last_name = input('Enter your last name: ')
+folder_name = 'data/'+first_name.title()+'_'+last_name.title()
+os.mkdir(folder_name)
+
+
+faceCascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+
+#take webcam video, need to change for pi
+camera = cv2.VideoCapture(0)
+data_img_num = 0
+
+while(True):
+    ret, video = camera.read()
+    gray_img = cv2.cvtColor(video, cv2.COLOR_BGR2GRAY)
+    find_face = faceCascade.detectMultiScale(gray_img, scaleFactor=1.1, minNeighbors=5)
+    for(x,y,w,h) in find_face:
+        gray_face = gray_img[y:y+h, x:x+w]
+        color_face = video[y:y+h, x:x+w]
+        cv2.putText(video, "Storing Data...", (x,y), cv2.FONT_HERSHEY_SIMPLEX,.5, (0,0,255), 1, cv2.LINE_AA)
+        cv2.rectangle(video, (x,y),(x+w,y+h),(0,0,255), 1)
+        
+    cv2.imwrite(folder_name + "/" + str(data_img_num)+".JPG", video)
+    data_img_num +=1
+    #end data collection
+    cv2.imshow('video', video)
+    if cv2.waitKey(20) & 0xFF == ord('q'):
+        break
+
+video.release()
+cv2.destroyAllWindows()

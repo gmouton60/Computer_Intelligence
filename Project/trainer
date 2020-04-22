@@ -1,0 +1,43 @@
+import os
+from PIL import Image
+import numpy as np
+import cv2
+import pickle
+
+faceCascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+image_dir = os.path.join(BASE_DIR, "data")
+
+model_trainer = cv2.face.LBPHFaceRecognizer_create()
+id = 0
+names = {}
+y_cord= []
+x_cord = []
+
+for root, dirs, files in os.walk(image_dir):
+    for file in files:
+        if file.endswith("jpg") or file.endswith("JPG"):
+            path = os.path.join(root,file)
+            name = os.path.basename(os.path.dirname(path)).title()
+            if not name in names:
+                names[name] = id
+                id += 1
+            new_user = names[name]
+            pimage = Image.open(path).convert("L")
+            altered_img = pimage.resize((550,550), Image.ANTIALIAS)
+
+            np_img = np.array(altered_img, "uint8")
+            find_face = faceCascade.detectMultiScale(np_img, scaleFactor=1.1, minNeighbors=5)
+
+            for(x,y,w,h) in find_face:
+                face = np_img[y:y+h, x:x+w]
+                x_cord.append(face)
+                y_cord.append(new_user)
+
+
+with open("data.pickle", "wb") as file:
+    pickle.dump(names, file)
+
+model_trainer.train(x_cord, np.array(y_cord))
+model_trainer.save("trained_model.yml")

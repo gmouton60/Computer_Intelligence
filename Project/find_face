@@ -1,0 +1,37 @@
+import os
+from PIL import Image
+import cv2
+import pickle
+
+
+faceCascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+model_trainer = cv2.face.LBPHFaceRecognizer_create()
+model_trainer.read("trained_model.yml")
+
+names = {}
+with open("data.pickle", "rb") as file:
+    switch_names=pickle.load(file)
+    names = {v:k for k,v in switch_names.items()}
+
+#take webcam video, need to change for pi
+camera = cv2.VideoCapture(0)
+
+while(True):
+    ret, video = camera.read()
+    gray_img = cv2.cvtColor(video, cv2.COLOR_BGR2GRAY)
+    find_face = faceCascade.detectMultiScale(gray_img, scaleFactor=1.1, minNeighbors=5)
+    for(x,y,w,h) in find_face:
+        gray_face = gray_img[y:y+h, x:x+w]
+        color_face = video[y:y+h, x:x+w]
+        user, confidence = model_trainer.predict(gray_face)
+        if confidence >= 45:
+            cv2.putText(video, names[user], (x,y), cv2.FONT_HERSHEY_SIMPLEX,1, (0,0,255), 1, cv2.LINE_AA)
+        cv2.rectangle(video, (x,y),(x+w,y+h),(0,0,255), 1)
+
+    cv2.imshow('video', video)
+    #press q to stop the video
+    if cv2.waitKey(20) & 0xFF == ord('q'):
+        break
+
+video.release()
+cv2.destroyAllWindows()
